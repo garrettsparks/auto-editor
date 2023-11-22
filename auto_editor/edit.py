@@ -155,6 +155,7 @@ def parse_export(export: str, log: Log) -> dict[str, Any]:
         "timeline": pAttrs("json", pAttr("api", 3, is_int)),
         "audio": pAttrs("audio"),
         "clip-sequence": pAttrs("clip-sequence"),
+        "lossless-trim": pAttrs("lossless-trim"),
     }
 
     if name in parsing:
@@ -374,6 +375,13 @@ def edit_media(
 
             make_media(my_timeline, append_filename(output, f"-{clip_num}"))
             clip_num += 1
+
+    if export["export"] == "lossless-trim":
+        from auto_editor.output import lossless_trim_media
+
+        lossless_trim_media(ffmpeg, output, tl, src, log)
+        return
+
     else:
         make_media(tl, output)
 

@@ -379,6 +379,17 @@ def edit_media(
     if export["export"] == "lossless-trim":
         from auto_editor.output import lossless_trim_media
 
+        if args.edit_based_on == "audio:threshold=100%":
+            num_v = len(tl.v)
+            audio_threshold = 100
+            while num_v == 0:
+                audio_threshold -= 5
+                args.edit_based_on = f"audio:threshold={audio_threshold}%"
+                tl = make_timeline(
+                    sources, inputs, ffmpeg, ensure, args, samplerate, bar, temp, log
+                )
+                num_v = len(tl.v)
+
         lossless_trim_media(ffmpeg, output, tl, src, log)
         return
 

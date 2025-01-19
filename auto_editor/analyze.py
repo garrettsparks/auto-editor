@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+np.float_ = np.float64
+
 from auto_editor import version
 from auto_editor.lang.json import Lexer, Parser, dump
 from auto_editor.lib.contracts import (

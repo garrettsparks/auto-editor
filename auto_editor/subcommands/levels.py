@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+np.float_ = np.float64
+
 from auto_editor.analyze import LevelError, Levels, builder_map
 from auto_editor.ffwrapper import FFmpeg, initFileInfo
 from auto_editor.lang.palet import env

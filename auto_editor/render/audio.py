@@ -6,6 +6,8 @@ from subprocess import PIPE
 
 import numpy as np
 
+np.float_ = np.float64
+
 from auto_editor.ffwrapper import FFmpeg
 from auto_editor.lang.json import Lexer, Parser
 from auto_editor.lang.palet import env

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 
 from auto_editor.ffwrapper import FFmpeg, FileInfo
+from auto_editor.avconvwrapper import AVConvert
 from auto_editor.timeline import v3
 from auto_editor.utils.container import Container
 from auto_editor.utils.func import append_filename
@@ -58,72 +59,135 @@ def video_quality(args: Args, ctr: Container) -> list[str]:
     )
 
 
-def lossless_trim_media(
+def lossless_trim_avconvert(
+    avconvert: AVConvert,
+    output: str,
+    tl: v3,
+    src: FileInfo,
+    log: Log,
+) -> None:
+    tb = tl.tb
+    clip_num = 0
+
+    if len(tl.v) == 0:
+        log.error("No clips found")
+
+    for v_seg in tl.v[0]:
+        start_frame = v_seg.offset
+        dur_frame = v_seg.dur
+
+        start_time = start_frame / (tb.numerator / tb.denominator)
+        dur_time = dur_frame / (tb.numerator / tb.denominator)
+
+        log.debug(f"clip {clip_num} start {start_time} dur {dur_time}")
+
+        cmd = [
+            "--start",
+            f"{start_time}",
+            "--duration",
+            f"{dur_time}",
+            "--source",
+            f"{src.path}",
+            "--preset",
+            "PresetPassthrough",
+            "--disableMetadataFilter",
+            "--progress",
+            "--replace",
+            "--output",
+        ]
+
+        output_seg = output
+        if len(tl.v[0]) > 1:
+            output_seg = append_filename(output, f"-{clip_num}")
+        cmd.append(output_seg)
+        avconvert.run_check_errors(cmd, log, path=output_seg)
+
+        clip_num += 1
+
+
+def lossless_trim_ffmpeg(
     ffmpeg: FFmpeg,
     output: str,
     tl: v3,
     src: FileInfo,
     log: Log,
 ) -> None:
-        tb = tl.tb
-        clip_num = 0
+    tb = tl.tb
+    clip_num = 0
 
-        if len(tl.v) == 0:
-            log.error(f"No clips found")
+    if len(tl.v) == 0:
+        log.error(f"No clips found")
 
-        for v_seg in tl.v[0]:
-            start_frame = v_seg.offset
-            dur_frame = v_seg.dur
+    for v_seg in tl.v[0]:
+        start_frame = v_seg.offset
+        dur_frame = v_seg.dur
 
-            start_time = start_frame / (tb.numerator / tb.denominator)
-            dur_time = dur_frame / (tb.numerator / tb.denominator)
+        start_time = start_frame / (tb.numerator / tb.denominator)
+        dur_time = dur_frame / (tb.numerator / tb.denominator)
 
-            log.debug(f"clip {clip_num} start {start_time} dur {dur_time}")
+        log.debug(f"clip {clip_num} start {start_time} dur {dur_time}")
 
-            cmd = [
-                "-hide_banner", "-ss", f"{start_time}",
-                "-i", f"{src.path}",
-                "-t",  f"{dur_time}",
-                "-avoid_negative_ts", "disabled",
+        cmd = [
+            "-hide_banner",
+            "-ss",
+            f"{start_time}",
+            "-i",
+            f"{src.path}",
+            "-t",
+            f"{dur_time}",
+            "-avoid_negative_ts",
+            "disabled",
+        ]
+
+        stream: int = 0
+
+        for v_track in tl.v:
+            v_stream = v_track[0].stream
+            cmd.extend(["-map", f"0:{v_stream}"])
+            cmd.extend([f"-c:{v_stream}", "copy"])
+            cmd.extend([f"-tag:{v_stream}", "hvc1"])
+            stream = v_stream
+
+        for a_track in tl.a:
+            a_stream = a_track[0].stream + stream + 1
+            cmd.extend(["-map", f"0:{a_stream}"])
+            cmd.extend([f"-c:{a_stream}", "copy"])
+
+        cmd.extend(
+            [
+                "-map_metadata",
+                "0",
             ]
+        )
 
-            stream: int = 0
+        output_ext = os.path.splitext(output)[1].replace(".", "")
+        if output_ext.lower() == "mov":
+            cmd.extend(
+                [
+                    "-movflags",
+                    "use_metadata_tags",
+                    "-movflags",
+                    "+faststart",
+                ]
+            )
 
-            for v_track in tl.v:
-                v_stream = v_track[0].stream
-                cmd.extend(["-map", f"0:{v_stream}"])
-                cmd.extend([f"-c:{v_stream}", "copy"])
-                cmd.extend([f"-tag:{v_stream}", "hvc1"])
-                stream = v_stream
+        cmd.extend(
+            [
+                "-default_mode",
+                "infer_no_subs",
+                "-ignore_unknown",
+                "-y",
+            ]
+        )
 
-            for a_track in tl.a:
-                a_stream = a_track[0].stream + stream + 1
-                cmd.extend(["-map", f"0:{a_stream}"])
-                cmd.extend([f"-c:{a_stream}", "copy"])
+        output_seg = output
+        if len(tl.v[0]) > 1:
+            output_seg = append_filename(output, f"-{clip_num}")
+        cmd.append(output_seg)
+        ffmpeg.run_check_errors(cmd, log, path=output_seg)
 
-            cmd.extend([
-                "-map_metadata", "0",
-            ])
+        clip_num += 1
 
-            output_ext = os.path.splitext(output)[1].replace(".", "")
-            if output_ext.lower() == "mov":
-                cmd.extend([
-                    "-movflags", "use_metadata_tags",
-                    "-movflags", "+faststart",
-                ])
-
-            cmd.extend([
-                "-default_mode", "infer_no_subs",
-                "-ignore_unknown", "-y",
-            ])
-
-            output_seg = output
-            if len(tl.v[0]) > 1:
-                output_seg = append_filename(output, f"-{clip_num}")
-            cmd.append(output_seg)
-            ffmpeg.run_check_errors(cmd, log, path=output_seg)
-
-            clip_num += 1
 
 def mux_quality_media(
     ffmpeg: FFmpeg,

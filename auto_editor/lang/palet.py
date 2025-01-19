@@ -18,6 +18,8 @@ from time import sleep
 from typing import TYPE_CHECKING
 
 import numpy as np
+
+np.float_ = np.float64
 from numpy import logical_and, logical_not, logical_or, logical_xor
 
 from auto_editor.analyze import edit_method, mut_remove_large, mut_remove_small

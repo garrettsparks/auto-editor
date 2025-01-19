@@ -8,6 +8,8 @@ from typing import Any
 
 import numpy as np
 
+np.float_ = np.float64
+
 
 class NotFound:
     pass

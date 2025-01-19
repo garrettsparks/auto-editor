@@ -4,6 +4,8 @@ from collections.abc import Callable
 from fractions import Fraction
 
 import numpy as np
+
+np.float_ = np.float64
 from numpy.typing import NDArray
 
 from auto_editor.utils.log import Log

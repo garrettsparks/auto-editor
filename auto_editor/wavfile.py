@@ -7,6 +7,8 @@ from typing import Literal
 
 import numpy as np
 
+np.float_ = np.float64
+
 PCM = 0x0001
 IEEE_FLOAT = 0x0003
 EXTENSIBLE = 0xFFFE

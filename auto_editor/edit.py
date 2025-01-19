@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from auto_editor.avconvwrapper import AVConvert
 from auto_editor.ffwrapper import FFmpeg, FileInfo, initFileInfo
 from auto_editor.lib.contracts import is_int, is_str
 from auto_editor.make_layers import make_timeline
@@ -155,7 +156,8 @@ def parse_export(export: str, log: Log) -> dict[str, Any]:
         "timeline": pAttrs("json", pAttr("api", 3, is_int)),
         "audio": pAttrs("audio"),
         "clip-sequence": pAttrs("clip-sequence"),
-        "lossless-trim": pAttrs("lossless-trim"),
+        "lossless-trim-ffmpeg": pAttrs("lossless-trim-ffmpeg"),
+        "lossless-trim-avconvert": pAttrs("lossless-trim-avconvert"),
     }
 
     if name in parsing:
@@ -376,8 +378,16 @@ def edit_media(
             make_media(my_timeline, append_filename(output, f"-{clip_num}"))
             clip_num += 1
 
-    if export["export"] == "lossless-trim":
-        from auto_editor.output import lossless_trim_media
+    if "lossless-trim" in export["export"]:
+        from auto_editor.output import lossless_trim_ffmpeg
+        from auto_editor.output import lossless_trim_avconvert
+
+        avconvert: AVConvert = AVConvert(
+            args.show_avconvert_commands,
+            args.show_avconvert_output,
+        )
+
+        assert src is not None
 
         if args.edit_based_on == "audio:threshold=100%":
             num_v = len(tl.v)
@@ -390,7 +400,10 @@ def edit_media(
                 )
                 num_v = len(tl.v)
 
-        lossless_trim_media(ffmpeg, output, tl, src, log)
+        if export["export"] == "lossless-trim-ffmpeg":
+            lossless_trim_ffmpeg(ffmpeg, output, tl, src, log)
+        if export["export"] == "lossless-trim-avconvert":
+            lossless_trim_avconvert(avconvert, output, tl, src, log)
         return
 
     else:

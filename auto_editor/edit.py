@@ -4,6 +4,7 @@ import os
 from typing import Any
 
 from auto_editor.avconvwrapper import AVConvert
+from auto_editor.exiftoolwrapper import ExifTool
 from auto_editor.ffwrapper import FFmpeg, FileInfo, initFileInfo
 from auto_editor.lib.contracts import is_int, is_str
 from auto_editor.make_layers import make_timeline
@@ -382,11 +383,6 @@ def edit_media(
         from auto_editor.output import lossless_trim_ffmpeg
         from auto_editor.output import lossless_trim_avconvert
 
-        avconvert: AVConvert = AVConvert(
-            args.show_avconvert_commands,
-            args.show_avconvert_output,
-        )
-
         assert src is not None
 
         if args.edit_based_on == "audio:threshold=100%":
@@ -401,8 +397,18 @@ def edit_media(
                 num_v = len(tl.v)
 
         if export["export"] == "lossless-trim-ffmpeg":
-            lossless_trim_ffmpeg(ffmpeg, output, tl, src, log)
+            exiftool: ExifTool = ExifTool(
+                args.show_exiftool_commands,
+                args.show_exiftool_output,
+            )
+            lossless_trim_ffmpeg(ffmpeg, exiftool, output, tl, src, log)
+
         if export["export"] == "lossless-trim-avconvert":
+            avconvert: AVConvert = AVConvert(
+                args.show_avconvert_commands,
+                args.show_avconvert_output,
+            )
+
             lossless_trim_avconvert(avconvert, output, tl, src, log)
         return
 

@@ -209,6 +209,12 @@ def main_options(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--show-avconvert-output", flag=True, help="Show avconvert stdout and stderr"
     )
+    parser.add_argument(
+        "--show-exiftool-commands", flag=True, help="Show exiftool commands"
+    )
+    parser.add_argument(
+        "--show-exiftool-output", flag=True, help="Show exiftool stdout and stderr"
+    )
     parser.add_argument("--quiet", "-q", flag=True, help="Display less output")
     parser.add_argument(
         "--preview",

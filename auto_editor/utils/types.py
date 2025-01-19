@@ -256,6 +256,8 @@ class Args:
     show_ffmpeg_output: bool = False
     show_avconvert_commands: bool = False
     show_avconvert_output: bool = False
+    show_exiftool_commands: bool = False
+    show_exiftool_output: bool = False
     quiet: bool = False
     preview: bool = False
     margin: tuple[str, str] = ("0.2s", "0.2s")

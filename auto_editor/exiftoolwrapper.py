@@ -11,8 +11,8 @@ from auto_editor.utils.func import get_stdout
 from auto_editor.utils.log import Log
 
 
-class AVConvert:
-    __slots__ = ("debug", "show_cmd", "path")
+class ExifTool:
+    __slots__ = ("debug", "show_cmd", "path", "version")
 
     def __init__(
         self,
@@ -21,30 +21,31 @@ class AVConvert:
     ):
         self.show_cmd = show_cmd
         self.debug = debug
-        self.path = "/usr/bin/avconvert"
+        self.path = "exiftool"
 
         try:
-            _h = get_stdout([self.path, "-h"])
+            _version = get_stdout([self.path, "-ver"]).split("\n")[0]
+            self.version = _version
         except FileNotFoundError:
             if sys.platform == "darwin":
-                Log().error("avconvert not found")
+                Log().error("No exiftool found. Download via homebrew.")
             if sys.platform == "win32":
-                Log().error("avconvert is only supported on macos")
+                Log().error("No exiftool found. Go download it.")
 
-            Log().error("avconvert must be installed")
+            Log().error("exiftool must be installed an on PATH")
 
     def print(self, message: str) -> None:
         if self.debug:
-            sys.stderr.write(f"avconvert: {message}\n")
+            sys.stderr.write(f"ExifTool: {message}\n")
 
     def print_cmd(self, cmd: list[str]) -> None:
         if self.show_cmd:
             sys.stderr.write(f"{' '.join(cmd)}\n\n")
 
     def run(self, cmd: list[str]) -> None:
-        cmd = [self.path, "--disableMetadataFilter", "--progress", "--replace"] + cmd
-        if self.debug:
-            cmd.extend(["--verbose"])
+        cmd = [self.path, "-m", "-overwrite_original"]
+        if not self.debug:
+            cmd.extend(["-quiet"])
         self.print_cmd(cmd)
         subprocess.run(cmd)
 
@@ -81,7 +82,9 @@ class AVConvert:
     ) -> Popen:
         cmd = [self.path] + cmd
         self.print_cmd(cmd)
-        return Popen(cmd, stdin=stdin, stdout=stdout, stderr=stderr)
+        return Popen(
+            " ".join(cmd), shell=True, stdin=stdin, stdout=stdout, stderr=stderr
+        )
 
     def pipe(self, cmd: list[str]) -> str:
         cmd = [self.path] + cmd

@@ -4,6 +4,7 @@ import os.path
 from dataclasses import dataclass
 from fractions import Fraction
 
+from auto_editor.exiftoolwrapper import ExifTool
 from auto_editor.ffwrapper import FFmpeg, FileInfo
 from auto_editor.avconvwrapper import AVConvert
 from auto_editor.timeline import v3
@@ -107,6 +108,7 @@ def lossless_trim_avconvert(
 
 def lossless_trim_ffmpeg(
     ffmpeg: FFmpeg,
+    exiftool: ExifTool,
     output: str,
     tl: v3,
     src: FileInfo,
@@ -185,6 +187,23 @@ def lossless_trim_ffmpeg(
             output_seg = append_filename(output, f"-{clip_num}")
         cmd.append(output_seg)
         ffmpeg.run_check_errors(cmd, log, path=output_seg)
+
+        exiftoolcmd = [
+            "-m",
+            "-overwrite_original",
+            "-api",
+            "QuickTimeUTC=1",
+            "-api",
+            "LargeFileSupport=1",
+            "-Keys:All=",
+            "-tagsFromFile",
+            f"{src.path}",
+            "-All:All",
+            "'-FileCreateDate<QuickTime:CreateDate'",
+            "'-FileModifyDate<QuickTime:CreateDate'",
+        ]
+        exiftoolcmd.append(output_seg)
+        exiftool.run_check_errors(exiftoolcmd, log, path=output_seg)
 
         clip_num += 1
 
